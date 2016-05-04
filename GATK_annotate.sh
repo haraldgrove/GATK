@@ -19,14 +19,14 @@
 
 
 
-
+set -e
 
 ##-------------
 ##Step0: Initialisation
 ##-------------
-snpeff_dir=/mnt/data2/home2/purinw/snpEff
-DBSNP=/home/bhoom/data/hg19/gatk_bundle/dbsnp_138.hg19.vcf
-java_mem=30g
+snpeff_dir=/home/harald/software/snpEff
+DBSNP=/home/harald/Rawdata/hg38bundle/dbsnp_144.hg38.vcf.gz
+java_mem=4g
 file_name=$1
 prefix=$(echo ${file_name} | sed 's/.vcf$//')
 
@@ -81,7 +81,7 @@ echo '5/6 ClinVar Annotation Completed'
 ##Step6: SnpEff
 ##-------------
 echo '6/6 SnpEff Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/snpEff.jar hg19 ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.vcf > ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.snpeff.vcf
+java -Xmx${java_mem} -jar ${snpeff_dir}/snpEff.jar GRCh38.82 ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.vcf > ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.snpeff.vcf
 echo '6/6 SnpEff Annotation Completed'
 
 
