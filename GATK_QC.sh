@@ -24,27 +24,28 @@
 ##-------------
 ##Step0-1: Directories
 ##-------------
-picard_dir=/home/bhoom/bin/picard-tools-1.119
-gatk_dir=/home/bhoom/bin/gatk3.3-0
-samtools_dir=/home/bhoom/bin/samtools-0.1.19
-home_dir=/mnt/data2/home2/purinw/WES
-ref_dir=/home/bhoom/data/hg19/gatk_bundle
+picard_dir=/home/harald/software/picard-tools-2.1.1
+gatk_dir=/home/harald/software/GATK-3.5
+samtools_dir=/home/harald/software/samtools # 1.3-20-gd49c73b
+java8_dir=/usr/lib/jvm/jdk1.8.0_73/bin
+home_dir=/home/harald/Projects/GATKtest/WES
+ref_dir=/home/harald/Rawdata/hg38bundle
 out_dir=${home_dir}/Output
 bed_dir=${home_dir}/bed
-target_bed=${bed_dir}/SureSelect5.target.bed
-bait_bed=${bed_dir}/SureSelect5.bait.bed
-exon_bed=${bed_dir}/exon_hg19.bed
-gene_list=/mnt/data2/home2/purinw/gene_list.txt
+target_bed=${bed_dir}/SureSelect5.target.bed # xx
+bait_bed=${bed_dir}/SureSelect5.bait.bed # xx
+exon_bed=${bed_dir}/exon_hg19.bed # xx
+gene_list=/mnt/data2/home2/purinw/gene_list.txt # xx
 
 ##-------------
 ##Step0-2: References
 ##-------------
-ref_genome=${ref_dir}/ucsc.hg19.fasta
+ref_genome=${ref_dir}/Homo_sapiens_assembly38.fasta
 
 ##-------------
 ##Step0-3: Other Parametres
 ##-------------
-java_mem=30g
+java_mem=4g
 
 ##-------------
 ##Step0-4: Sample Name

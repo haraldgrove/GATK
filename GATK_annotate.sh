@@ -15,6 +15,10 @@
 ##How to run:
 ##i>	Change all the directories and files within Step0 of this script accordingly.
 ##ii>	Run the command 'bash /path/to/GATK_annotate.sh file_name'
+##
+##snpEff produces two output files that is placed in the folder where the command is run.
+##	snpEff_summary.html
+##	snpEff_genes.txt
 ##-------------
 
 
@@ -26,7 +30,7 @@ set -e
 ##-------------
 snpeff_dir=/home/harald/software/snpEff
 DBSNP=/home/harald/Rawdata/hg38bundle/dbsnp_144.hg38.vcf.gz
-java_mem=4g
+java_mem=6g
 file_name=$1
 prefix=$(echo ${file_name} | sed 's/.vcf$//')
 

@@ -33,7 +33,7 @@ picard_dir=/home/harald/software/picard-tools-2.1.1
 gatk_dir=/home/harald/software/GATK-3.5
 fastq_dir=/home/harald/Rawdata/ExomeSeq
 ref_dir=/home/harald/Rawdata/hg38bundle
-out_dir=/home/harald/Projects/GATKtest/wes
+out_dir=/home/harald/Projects/GATKtest/WES/Output
 java8_dir=/usr/lib/jvm/jdk1.8.0_73/bin
 java7_dir=/usr/lib/jvm/jdk1.7.0_79/bin
 
