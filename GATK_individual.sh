@@ -33,7 +33,7 @@ picard_dir=/home/harald/software/picard-tools-2.1.1
 gatk_dir=/home/harald/software/GATK-3.5
 fastq_dir=/home/harald/Rawdata/ExomeSeq
 ref_dir=/home/harald/Rawdata/hg38bundle
-out_dir=/home/harald/Projects/GATKtest/wes
+out_dir=/home/harald/Projects/GATKtest/WES/Output
 java8_dir=/usr/lib/jvm/jdk1.8.0_73/bin
 java7_dir=/usr/lib/jvm/jdk1.7.0_79/bin
 
@@ -218,6 +218,7 @@ java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
 -known ${indel_1} \
 -known ${indel_2} \
 -R ${ref_genome} \
+${bed_argument} \
 -I ${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
 -dt NONE \
 -nt ${gatk_num_threads} \
@@ -259,6 +260,7 @@ java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
 -knownSites ${indel_1} \
 -knownSites ${indel_2} \
 -knownSites ${DBSNP} \
+${bed_argument} \
 -I ${out_dir}/${sample_name}/BAM/${sample_name}_realigned.bam \
 -nct ${gatk_num_cpu_threads} \
 -o ${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
@@ -274,6 +276,7 @@ java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
 -knownSites ${indel_1} \
 -knownSites ${indel_2} \
 -knownSites ${DBSNP} \
+${bed_argument} \
 -I ${out_dir}/${sample_name}/BAM/${sample_name}_realigned.bam \
 -nct ${gatk_num_cpu_threads} \
 -BQSR ${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
@@ -326,9 +329,9 @@ java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
 --emitRefConfidence GVCF \
 --variant_index_type LINEAR \
 --variant_index_parameter 128000 \
---genotyping_mode DISCOVERY # Default\
--stand_emit_conf 30 # Default \
--stand_call_conf 30 # Default \
+--genotyping_mode DISCOVERY \
+-stand_emit_conf 30 \
+-stand_call_conf 30 \
 ${bed_argument} \
 -A DepthPerSampleHC \
 -A ClippingRankSumTest \
@@ -363,7 +366,6 @@ java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
 --variant ${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.gvcf \
 --disable_auto_index_creation_and_locking_when_reading_rods \
 -nt 1 \
-${bed_argument} \
 -o ${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
 -log ${out_dir}/${sample_name}/LOG/08_${sample_name}_genotype_gvcf.log
 

@@ -15,11 +15,15 @@
 ##How to run:
 ##i>	Change all the directories and files within Step0 of this script accordingly.
 ##ii>	Run the command 'bash /path/to/GATK_annotate.sh [options] input_file'
+##
+##snpEff produces two output files that is placed in the folder where the command is run.
+##	snpEff_summary.html
+##	snpEff_genes.txt
 ##-------------
 
 
 
-
+set -e
 
 ##-------------
 ##Step0: Initialisation
@@ -28,12 +32,12 @@
 ##-------------
 ##Step0-1: Directories
 ##-------------
-snpeff_dir=/mnt/data2/home2/purinw/snpEff
+snpeff_dir=/home/harald/software/snpEff
 
 ##-------------
 ##Step0-2: References
 ##-------------
-DBSNP=/home/bhoom/data/hg19/gatk_bundle/dbsnp_138.hg19.vcf
+DBSNP=/home/harald/Rawdata/hg38bundle/dbsnp_144.hg38.vcf.gz
 DBNSFP=${snpeff_dir}/data/dbNSFP.txt.gz
 GWASCATALOG=${snpeff_dir}/data/gwascatalog.txt
 PHASTCONS=${snpeff_dir}/data/phastCons
@@ -42,7 +46,7 @@ CLINVAR=${snpeff_dir}/data/clinvar.vcf
 ##-------------
 ##Step0-3: Other Parametres
 ##-------------
-java_mem=30g
+java_mem=6g
 
 ##-------------
 ##Step0-4: Input Arguments
@@ -188,7 +192,7 @@ echo '5/6 ClinVar Annotation Completed'
 ##Step6: SnpEff
 ##-------------
 echo '6/6 SnpEff Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/snpEff.jar hg19 ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.vcf > ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.snpeff.vcf
+java -Xmx${java_mem} -jar ${snpeff_dir}/snpEff.jar GRCh38.82 ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.vcf > ${prefix}.dbsnp.dbnsfp.gwascat.phastcons.clinvar.snpeff.vcf
 echo '6/6 SnpEff Annotation Completed'
 
 
