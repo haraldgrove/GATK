@@ -23,29 +23,28 @@
 ##-------------
 ##Step0-1: Directories
 ##-------------
-project_dir=/mnt/data2/home2/purinw/SUDS-2
-ref_dir=/home/bhoom/data/hg19/gatk_bundle
-resource_dir=/mnt/data2/home2/purinw/resource
-bwa_dir=/home/bhoom/bin/bwa-0.7.5a
-picard_dir=/home/bhoom/bin/picard-tools-1.119
-gatk_dir=/home/bhoom/bin/gatk3.3-0
-samtools_dir=/home/bhoom/bin/samtools-0.1.19
-fastq_dir=${project_dir}/RawData
-out_dir=${project_dir}/Output
+bwa_dir=/home/harald/software/bwa-0.7.13
+picard_dir=/home/harald/software/picard-tools-2.1.1
+gatk_dir=/home/harald/software/GATK-3.5
+fastq_dir=/home/harald/Rawdata/ExomeSeq
+ref_dir=/home/harald/Rawdata/hg38bundle
+out_dir=/home/harald/Projects/GATKtest/WES/Output
+java8_dir=/usr/lib/jvm/jdk1.8.0_73/bin
+java7_dir=/usr/lib/jvm/jdk1.7.0_79/bin
 
 ##-------------
 ##Step0-2: References
 ##-------------
-ref_genome=${ref_dir}/ucsc.hg19.fasta
-indel_1=${ref_dir}/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf
-indel_2=${ref_dir}/1000G_phase1.indels.hg19.sites.vcf
-DBSNP=${ref_dir}/dbsnp_138.hg19.vcf
-exon_bed=/mnt/data2/home2/purinw/WES/bed/exon_hg19.bed
+ref_genome=${ref_dir}/Homo_sapiens_assembly38.fasta
+indel_1=${ref_dir}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+indel_2=${ref_dir}/Homo_sapiens_assembly38.known_indels.vcf.gz
+DBSNP=${ref_dir}/dbsnp_144.hg38.vcf.gz
+exon_bed=~/Rawdata/ExomeSeq/kit-info/remapped_agilentV5_regions_onlychr.bed
 
 ##-------------
 ##Step0-3: Other Parametres
 ##-------------
-java_mem=30g
+java_mem=4g
 
 ##-------------
 ##Step0-4: List of Samples
