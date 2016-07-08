@@ -35,7 +35,7 @@ bed_dir=${home_dir}/bed
 target_bed=${bed_dir}/SureSelect5.target.bed # xx
 bait_bed=${bed_dir}/SureSelect5.bait.bed # xx
 exon_bed=${bed_dir}/exon_hg19.bed # xx
-gene_list=/mnt/data2/home2/purinw/gene_list.txt # xx
+gene_list=${home_dir}/gene_list.txt # xx
 
 ##-------------
 ##Step0-2: References

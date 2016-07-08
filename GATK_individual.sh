@@ -191,7 +191,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Scripts/04_${sample_name}_build_index.sh
 #!/bin/bash
-ser -e
+set -e
 ##-------------
 ##Step4: Build Index
 ##-------------

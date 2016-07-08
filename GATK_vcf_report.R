@@ -73,7 +73,7 @@ for(i in 1:n_row){
 ANNOTATION_FIELD$DBNSFP_FIELD <- gsub(pattern="^dbNSFP_",replacement="",ANNOTATION_FIELD$DBNSFP_FIELD)
 ANNOTATION_FIELD$CLINVAR_FIELD <- gsub(pattern="^CLN",replacement = "ClinVar_",ANNOTATION_FIELD$CLINVAR_FIELD)
 dimnames(ANNOTATIONS)[[2]] <- unlist(ANNOTATION_FIELD)
-dimnames(ALT)[[2]] <- paste("ALLELE.FREQ",1:n_allele,sep=".")
+dimnames(ALT)[[2]] <- list(paste("ALLELE.FREQ",1:n_allele,sep="."))
 
 OUTPUT <- cbind(VCF[,1:5],N_CHROM_ALT,ALT,ALLELES,CANDIDATE_GENES,FUNCTIONS,ANNOTATIONS,VCF[,6:7],stringsAsFactors=FALSE)
 OUTPUT <- OUTPUT[ELIGIBLE,]
@@ -85,7 +85,7 @@ for(i in rev(grep("^ALLELE.FREQ.",dimnames(OUTPUT)[[2]]))){
 GENO <- gsub(":.*$","",as.matrix(VCF[ELIGIBLE,-(1:9)]))
 
 sample_names <- dimnames(GENO)[[2]]
-dimnames(GENO)[[2]] <- paste("SampleID",sample_names,sep="=")
+dimnames(GENO)[[2]] <- list(paste("SampleID",sample_names,sep="="))
 write.table(cbind(OUTPUT,GENO,INFO),paste(output_prefix,"report_wide.tsv",sep="_"),sep="\t",row.names=F,quote=F)  
 
 GENO <- data.frame(SampleID=rep(sample_names,each=sum(ELIGIBLE)),GENOTYPE=as.character(GENO),stringsAsFactors = F)

@@ -11,7 +11,7 @@
 ##ii>	Run the command 'bash /path/to/GATK_vcf_report.sh file_name gene_list_file'
 ##-------------
 
-
+set -e
 
 
 
@@ -42,7 +42,7 @@ vcftools --vcf ${full_vcf_file} --counts --out ${prefix}.alleles
 ##-------------
 ##Step3: Tabulating Results (Via R)
 ##-------------
-Rscript /mnt/data2/home2/purinw/Scripts/GATK_vcf_report.R ${prefix}.reduced.vcf ${prefix}.alleles.frq.count ${gene_list}
+Rscript /home/harald/tools/GATK/GATK_vcf_report.R ${prefix}.reduced.vcf ${prefix}.alleles.frq.count ${gene_list}
 
 
 

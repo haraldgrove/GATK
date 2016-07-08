@@ -18,7 +18,7 @@
 ##-------------
 ##Step0: Initialisation
 ##-------------
-snpeff_dir=/mnt/data2/home2/purinw/snpEff
+snpeff_dir=/home/harald/software/snpEff
 file_name=$1
 gene_list=$2
 
