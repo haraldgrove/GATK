@@ -14,7 +14,7 @@
 ##-------------
 
 
-
+set -e
 
 
 ##-------------
@@ -28,13 +28,13 @@ picard_dir=/home/harald/software/picard-tools-2.1.1
 gatk_dir=/home/harald/software/GATK-3.5
 samtools_dir=/home/harald/software/samtools # 1.3-20-gd49c73b
 java8_dir=/usr/lib/jvm/jdk1.8.0_73/bin
-home_dir=/home/harald/Projects/GATKtest/WES
+home_dir=/home/harald/Projects/NGS_IPGG
 ref_dir=/home/harald/Rawdata/hg38bundle
-out_dir=${home_dir}/Output
+out_dir=${home_dir}/WES/Output
 bed_dir=${home_dir}/bed
-target_bed=${bed_dir}/SureSelect5.target.bed # xx
-bait_bed=${bed_dir}/SureSelect5.bait.bed # xx
-exon_bed=${bed_dir}/exon_hg19.bed # xx
+target_bed=${bed_dir}/breastcancer_genepanel.bed # xx
+bait_bed=${bed_dir}/breastcancer_genepanel.bed # xx
+exon_bed=${bed_dir}/breastcancer_genepanel.bed # xx
 gene_list=${home_dir}/gene_list.txt # xx
 
 ##-------------
@@ -70,6 +70,7 @@ mkdir -p ${out_dir}/${sample_name}/{Report,Script/QC}
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/01_${sample_name}_TiTv.sh
 #!/bin/bash
+set -e
 ##-------------
 ##Step1-1: Prepare SNPs
 ##-------------
@@ -123,6 +124,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/02_${sample_name}_depth_of_coverage.sh
 #!/bin/bash
+set -e
 ##-------------
 ##Step2-1: Depth of Coverage on Exon
 ##-------------
@@ -211,6 +213,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/05_${sample_name}_gc_bias_metrics.sh
 #!/bin/bash
+set -e
 ##-------------
 ##Step5: GC Bias Metrics
 ##-------------
@@ -231,6 +234,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/06_${sample_name}_insert_size_metrics.sh
 #!/bin/bash
+set -e
 ##-------------
 ##Step6: Insert Size Metrics
 ##-------------
@@ -250,6 +254,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/07_${sample_name}_mean_quality_by_cycle.sh
 #!/bin/bash
+set -e
 ##-------------
 ##Step7: Mean Quality by Cycle
 ##-------------
@@ -269,6 +274,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/08_${sample_name}_hybridization_selection_metrics.sh
 #!/bin/bash
+set -e
 ##-------------
 ##Step8: Hybridization Selection Metrics
 ##-------------
@@ -292,6 +298,7 @@ EOL
 ##-------------
 cat <<EOL > ${out_dir}/${sample_name}/Script/QC/${sample_name}_QC.sh
 #!/bin/bash
+set -e
 ##-------------
 ##${sample_name}'s Post-Calling Quality Control
 ##-------------
