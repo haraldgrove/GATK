@@ -394,14 +394,9 @@ ${bed_argument} \
 -A AlleleBalance \
 -A QualByDepth \
 -pairHMM VECTOR_LOGLESS_CACHING \
-<<<<<<< HEAD
 -nct ${gatk_num_cpu_threads} \
--o ${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.gvcf \
--log ${out_dir}/${sample_name}/LOG/07_${sample_name}_haplotype_caller.log
-=======
 -o ${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.g.vcf \
 -log ${out_dir}/${sample_name}/LOG/7_${sample_name}_haplotype_caller.log
->>>>>>> 4f948e132910f1a7000b00340852ba4ef531a29b
 
 EOL
 
