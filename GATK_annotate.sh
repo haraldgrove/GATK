@@ -3,6 +3,9 @@
 ##Purin Wangkiratikant, MAR 2016
 ##Clinical Database Centre, Institute of Personalised Genomics and Gene Therapy (IPGG)
 ##Faculty of Medicine Siriraj Hospital, Mahidol University, Bangkok, Thailand
+##-----------
+##Harald Grove, JUN 2016
+##Upgraded reference to hg38
 ##-------------
 ##This script annotates a given VCF file with the following databases:
 ##i>	dbSNP
@@ -39,9 +42,9 @@ snpeff_dir=/home/harald/software/snpEff
 ##-------------
 DBSNP=/home/harald/Rawdata/hg38bundle/dbsnp_144.hg38.vcf.gz
 DBNSFP=${snpeff_dir}/data/dbNSFP.txt.gz
-GWASCATALOG=${snpeff_dir}/data/gwascatalog.txt
-PHASTCONS=${snpeff_dir}/data/phastCons
-CLINVAR=${snpeff_dir}/data/clinvar.vcf 
+GWASCATALOG=${snpeff_dir}/data/gwas_catalog_v1.0.1-associations_e84_r2016-07-10.tsv
+PHASTCONS=${snpeff_dir}/data/phastCons100way
+CLINVAR=${snpeff_dir}/data/clinvar.vcf.gz 
 
 ##-------------
 ##Step0-3: Other Parametres
