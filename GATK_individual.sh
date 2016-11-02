@@ -28,14 +28,10 @@ set -e
 ##-------------
 ##Step0-1: Directories
 ##-------------
-bwa_dir=/home/harald/software/bwa-0.7.13
-picard_dir=/home/harald/software/picard-tools-2.1.1
-gatk_dir=/home/harald/software/GATK-3.5
-fastq_dir=/home/harald/Rawdata/ExomeSeq
-ref_dir=/home/harald/Rawdata/hg38bundle
-out_dir=/home/harald/Projects/GATKtest/WES/Output
-java8_dir=/usr/lib/jvm/jdk1.8.0_73/bin
-java7_dir=/usr/lib/jvm/jdk1.7.0_79/bin
+map_dir=/
+fastq_dir=tiger/harald/bgi2
+ref_dir=tiger/harald/resources/hg38bundle
+out_dir=tiger/harald/bgi2
 
 ##-------------
 ##Step0-2: References
@@ -44,19 +40,20 @@ ref_genome=${ref_dir}/Homo_sapiens_assembly38.fasta
 indel_1=${ref_dir}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 indel_2=${ref_dir}/Homo_sapiens_assembly38.known_indels.vcf.gz
 DBSNP=${ref_dir}/dbsnp_144.hg38.vcf.gz
-exon_bed=~/Rawdata/ExomeSeq/kit-info/remapped_agilentV5_regions_onlychr.bed
+exon_bed=${ref_dir}/remapped_agilentV5_regions_onlychr.bed
 
 ##-------------
 ##Step0-3: Other Parametres
 ##-------------
-java_mem=4g
-cores=4
-gatk_num_threads=1
-gatk_num_cpu_threads=4
+cores=16
+gatk_num_threads=4
+gatk_num_cpu_threads=8
 
 ##-------------
 ##Step0-4: Input Arguments
 ##-------------
+
+no_geno=0
 while test $# -gt 0 ; do
         case "$1" in
                 -h|--help)
@@ -106,7 +103,7 @@ while test $# -gt 0 ; do
 						;;
                 -e|--exome)
 						seq_type='EXOME'
-						bed_argument='-L '${exon_bed}
+						bed_argument='-L '/data/${exon_bed}
                         shift
                         ;;
 				*)
@@ -126,18 +123,18 @@ fi
 ##-------------
 ##Step0-6: Input Verification
 ##-------------
-if [[ ! -e ${fastq_dir}/${sample_name}_1.fastq.gz ]] ; then
+if [[ ! -e /${fastq_dir}/${sample_name}_1.fastq.gz ]] ; then
 		echo
 		echo 'Invalid SAMPLE NAME: '${sample_name}
-		echo ${fastq_dir}/${sample_name}_1.fastq.gz not found.
+		echo /${fastq_dir}/${sample_name}_1.fastq.gz not found.
 		echo 'Terminated.'
 		echo
 		exit 1
 fi
-if [[ ! -e ${fastq_dir}/${sample_name}_2.fastq.gz ]] ; then
+if [[ ! -e /${fastq_dir}/${sample_name}_2.fastq.gz ]] ; then
 		echo
 		echo 'Invalid SAMPLE NAME: '${sample_name}
-		echo ${fastq_dir}/${sample_name}_2.fastq.gz not found.
+		echo /${fastq_dir}/${sample_name}_2.fastq.gz not found.
 		echo 'Terminated.'
 		echo
 		exit 1
@@ -181,22 +178,27 @@ fi
 ##-------------
 ##Step0-8: Output Folders Creation
 ##-------------
-mkdir -p ${out_dir}
-mkdir -p ${out_dir}/${sample_name} ; mkdir -p ${out_dir}/${sample_name}/{Scripts,LOG,TEMP,SAM,BAM,BQSR,GVCF,VCF,QC,QC/FILTERED,Report}
-
+mkdir -p /${out_dir}
+mkdir -p /${out_dir}/${sample_name} ; mkdir -p /${out_dir}/${sample_name}/{Scripts,LOG,TEMP,SAM,BAM,BQSR,GVCF,VCF,QC,QC/FILTERED,Report}
+chmod -R 777 /${out_dir}/${sample_name}
 
 
 ##-------------
 ##Step1: Align
 ##-------------
-cat << EOL > ${out_dir}/${sample_name}/Scripts/1_${sample_name}_align.sh
+cat << EOL > /${out_dir}/${sample_name}/Scripts/1_${sample_name}_align.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step1: Align
 ##-------------
-${bwa_dir}/bwa mem -t ${cores} -R "@RG\tID:DM_${sample_name}\tSM:${sample_name}\tPL:Illumina\tLB:WES\tPU:unit1" ${ref_genome} \
-${fastq_dir}/${sample_name}_1.fastq.gz ${fastq_dir}/${sample_name}_2.fastq.gz > ${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam
+docker run --rm -v /:/data biodckr/bwa bwa mem \
+-t ${cores} \
+-R "@RG\tID:DM_${sample_name}\tSM:${sample_name}\tPL:Illumina\tLB:WES\tPU:unit1" \
+/data/${ref_genome}.gz \
+/data/${fastq_dir}/${sample_name}_1.fastq.gz \
+/data/${fastq_dir}/${sample_name}_2.fastq.gz \
+> /${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam
 
 EOL
 
@@ -205,17 +207,18 @@ EOL
 ##-------------
 ##Step2: Sort
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/2_${sample_name}_sort.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/2_${sample_name}_sort.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step2: Sort
 ##-------------
-${java8_dir}/java -Xmx${java_mem} -jar ${picard_dir}/picard.jar SortSam \
-INPUT=${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam \
-OUTPUT=${out_dir}/${sample_name}/BAM/${sample_name}_sorted.bam \
+docker run --rm -v /:/data biodckr/picard /opt/conda/jre/bin/java -Xmx30G -jar /opt/conda/share/picard-2.3.0-0/picard.jar \
+SortSam \
+INPUT=/data/${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam \
+OUTPUT=/data/${out_dir}/${sample_name}/BAM/${sample_name}_sorted.bam \
 SORT_ORDER=coordinate \
-TMP_DIR=${out_dir}/${sample_name}/TEMP
+TMP_DIR=/tmp
 
 EOL
 
@@ -224,17 +227,19 @@ EOL
 ##-------------
 ##Step3: Deduplicate
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/3_${sample_name}_deduplicate.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/3_${sample_name}_deduplicate.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step3: Deduplicate
 ##-------------
-${java8_dir}/java -Xmx${java_mem} -jar ${picard_dir}/picard.jar MarkDuplicates \
-INPUT=${out_dir}/${sample_name}/BAM/${sample_name}_sorted.bam \
-OUTPUT=${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
-METRICS_FILE=${out_dir}/${sample_name}/Report/${sample_name}_deduplication_metrics.txt \
-CREATE_INDEX=TRUE TMP_DIR=${out_dir}/${sample_name}/TEMP
+docker run --rm -v /:/data biodckr/picard /opt/conda/jre/bin/java -Xmx30G -jar /opt/conda/share/picard-2.3.0-0/picard.jar \
+MarkDuplicates \
+INPUT=/data/${out_dir}/${sample_name}/BAM/${sample_name}_sorted.bam \
+OUTPUT=/data/${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
+METRICS_FILE=/data/${out_dir}/${sample_name}/BAM/${sample_name}_deduplication_metrics.txt \
+CREATE_INDEX=TRUE \
+TMP_DIR=/tmp
 
 EOL
 
@@ -243,56 +248,15 @@ EOL
 ##-------------
 ##Step4: Build Index
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/4_${sample_name}_build_index.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/4_${sample_name}_build_index.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step4: Build Index
-##-------------
-${java8_dir}/java -Xmx${java_mem} -jar ${picard_dir}/picard.jar BuildBamIndex \
-INPUT=${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
-TMP_DIR=${out_dir}/${sample_name}/TEMP
-
-EOL
-
-
-
-##-------------
-##Step5: Indel Realignment
-##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/5_${sample_name}_realign_indels.sh
-#!/bin/bash
-set -e
-##-------------
-##Step5-1: Create Aligner Target
-##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T RealignerTargetCreator \
---disable_auto_index_creation_and_locking_when_reading_rods \
--known ${indel_1} \
--known ${indel_2} \
--R ${ref_genome} \
-${bed_argument} \
--I ${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
--dt NONE \
--nt ${gatk_num_threads} \
--o ${out_dir}/${sample_name}/BAM/${sample_name}_indel_target_intervals.list \
--log ${out_dir}/${sample_name}/LOG/5-1_${sample_name}_indel_target_intervals.log
-
-##-------------
-##Step5-2: Realign Indels
-##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T IndelRealigner \
---disable_auto_index_creation_and_locking_when_reading_rods \
--known ${indel_1} \
--known ${indel_2} \
--I ${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
--R ${ref_genome} \
--targetIntervals ${out_dir}/${sample_name}/BAM/${sample_name}_indel_target_intervals.list \
--dt NONE \
--o ${out_dir}/${sample_name}/BAM/${sample_name}_realigned.bam \
--log ${out_dir}/${sample_name}/LOG/5-2_${sample_name}_indel_realigned.log
+docker run --rm -v /:/data biodckr/picard /opt/conda/jre/bin/java -Xmx30G -jar /opt/conda/share/picard-2.3.0-0/picard.jar \
+BuildBamIndex \
+INPUT=/data/${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
+TMP_DIR=/tmp
 
 EOL
 
@@ -301,105 +265,69 @@ EOL
 ##-------------
 ##Step6: Base Quality Score Recalibration
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/6_${sample_name}_recalibrate_base.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/6_${sample_name}_recalibrate_base.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step6-1: Perform Base Recalibration
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T BaseRecalibrator \
 --disable_auto_index_creation_and_locking_when_reading_rods \
--R ${ref_genome} \
--knownSites ${indel_1} \
--knownSites ${indel_2} \
--knownSites ${DBSNP} \
+-R /data/${ref_genome} \
+-knownSites /data/${indel_1} \
+-knownSites /data/${indel_2} \
+-knownSites /data/${DBSNP} \
 ${bed_argument} \
--I ${out_dir}/${sample_name}/BAM/${sample_name}_realigned.bam \
+--interval_padding 100 \
+-I /data/${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
 -nct ${gatk_num_cpu_threads} \
--o ${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
--log ${out_dir}/${sample_name}/LOG/6-1_${sample_name}_perform_bqsr.log
-
-##-------------
-##Step6-2: Generate Post-BQSR Table
-##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T BaseRecalibrator \
---disable_auto_index_creation_and_locking_when_reading_rods \
--R ${ref_genome} \
--knownSites ${indel_1} \
--knownSites ${indel_2} \
--knownSites ${DBSNP} \
-${bed_argument} \
--I ${out_dir}/${sample_name}/BAM/${sample_name}_realigned.bam \
--nct ${gatk_num_cpu_threads} \
--BQSR ${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
--o ${out_dir}/${sample_name}/BQSR/${sample_name}_after_bqsr.table \
--log ${out_dir}/${sample_name}/LOG/6-2_${sample_name}_after_bqsr.log
-
-##-------------
-##Step6-3: Plot Base Recalibration
-##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T AnalyzeCovariates \
--R ${ref_genome} \
--before ${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
--after ${out_dir}/${sample_name}/BQSR/${sample_name}_after_bqsr.table \
--plots ${out_dir}/${sample_name}/Report/${sample_name}_bqsr.pdf \
--log ${out_dir}/${sample_name}/LOG/6-3_${sample_name}_plot_bqsr.log ;
+-o /data/${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
+-log /data/${out_dir}/${sample_name}/LOG/6-1_${sample_name}_perform_bqsr.log \
+--fix_misencoded_quality_scores
 
 ##-------------
 ##Step6-4: Print Reads
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T PrintReads \
--R ${ref_genome} \
+-R /data/${ref_genome} \
 --disable_auto_index_creation_and_locking_when_reading_rods \
--I ${out_dir}/${sample_name}/BAM/${sample_name}_realigned.bam \
--BQSR ${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
+-I /data/${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
+-BQSR /data/${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
 -dt NONE \
 -EOQ \
 -nct ${gatk_num_cpu_threads} \
--o ${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam \
--log ${out_dir}/${sample_name}/LOG/6-4_${sample_name}_final_bam.log
+-o /data/${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam \
+-log /data/${out_dir}/${sample_name}/LOG/6-4_${sample_name}_final_bam.log
 
 EOL
-
 
 
 ##-------------
 ##Step7: Call Haplotype
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/7_${sample_name}_call_haplotype.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/7_${sample_name}_call_haplotype.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step7: Call Haplotype
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T HaplotypeCaller \
--R ${ref_genome} \
---input_file ${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam \
+-R /data/${ref_genome} \
+--input_file /data/${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam \
 --emitRefConfidence GVCF \
---variant_index_type LINEAR \
---variant_index_parameter 128000 \
 --genotyping_mode DISCOVERY \
 -stand_emit_conf 30 \
 -stand_call_conf 30 \
 ${bed_argument} \
+--interval_padding 100 \
+-o /data/${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.g.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/7_${sample_name}_haplotype_caller.log \
 -A DepthPerSampleHC \
--A ClippingRankSumTest \
--A MappingQualityRankSumTest \
--A ReadPosRankSumTest \
--A FisherStrand \
--A GCContent \
--A AlleleBalanceBySample \
--A AlleleBalance \
--A QualByDepth \
 -pairHMM VECTOR_LOGLESS_CACHING \
--nct ${gatk_num_cpu_threads} \
--o ${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.g.vcf \
--log ${out_dir}/${sample_name}/LOG/7_${sample_name}_haplotype_caller.log
+-nct ${gatk_num_cpu_threads}
 
 EOL
 
@@ -408,86 +336,70 @@ EOL
 ##-------------
 ##Step8: Genotype
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/8_${sample_name}_genotype_gvcf.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/8_${sample_name}_genotype_gvcf.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step8: Genotype
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T GenotypeGVCFs \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.g.vcf \
+-R /data/${ref_genome} \
+--variant /data/${out_dir}/${sample_name}/GVCF/${sample_name}_GATK.g.vcf \
 --disable_auto_index_creation_and_locking_when_reading_rods \
 -nt 1 \
--o ${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
--log ${out_dir}/${sample_name}/LOG/8_${sample_name}_genotype_gvcf.log
+-o /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/8_${sample_name}_genotype_gvcf.log
+
+docker run --rm -v /:/data alexcoppe/gatk \
+-T VariantAnnotator \
+-R /data/${ref_genome} \
+--variant /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
+--disable_auto_index_creation_and_locking_when_reading_rods \
+-I /data/${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam \
+--dbsnp /data/${DBSNP} \
+-L /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
+-dt NONE \
+-nt 1 \
+-o /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_ANNOTATED.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/8-1_${sample_name}_QC_snv_annotation.log \
+-A ClippingRankSumTest \
+-A ReadPosRankSumTest \
+-A MappingQualityRankSumTest \
+-A GCContent \
+-A AlleleBalanceBySample \
+-A AlleleBalance \
+-A VariantType
 
 EOL
-
-
 
 ##-------------
 ##Step9: SNV Quality Control
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/9_${sample_name}_SNV_quality_control.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/9_${sample_name}_SNV_quality_control.sh
 #!/bin/bash
 set -e
 ##-------------
 ##Step9-1-1: Extract SNPs
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T SelectVariants \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
+-R /data/${ref_genome} \
+--variant /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_ANNOTATED.vcf \
 --disable_auto_index_creation_and_locking_when_reading_rods \
 -selectType SNP \
 --excludeFiltered \
 -nt 1 \
--o  ${out_dir}/${sample_name}/QC/${sample_name}_RAW_SNV.vcf \
--log ${out_dir}/${sample_name}/LOG/9-1-1_${sample_name}_QC_select_snv.log
+-o /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_SNV.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/9-1-1_${sample_name}_QC_select_snv.log
 
 ##-------------
-##Step9-1-2: Extract Indels
+##Step9-1-2: Filter SNPs
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T SelectVariants \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/VCF/${sample_name}_RAW.vcf \
---disable_auto_index_creation_and_locking_when_reading_rods \
--selectType INDEL \
--selectType MNP \
--selectType MIXED \
--selectType SYMBOLIC \
---excludeFiltered \
--nt 1 \
--o ${out_dir}/${sample_name}/QC/${sample_name}_RAW_INDEL.vcf \
--log ${out_dir}/${sample_name}/LOG/9-1-2_${sample_name}_QC_select_INDEL.log
-
-##-------------
-##Step9-2-1: Annotate SNPs
-##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T VariantAnnotator \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/QC/${sample_name}_RAW_SNV.vcf \
---disable_auto_index_creation_and_locking_when_reading_rods \
---dbsnp ${DBSNP} \
--L ${out_dir}/${sample_name}/QC/${sample_name}_RAW_SNV.vcf \
--A GCContent \
--A VariantType \
--dt NONE \
--nt 1 \
--o ${out_dir}/${sample_name}/QC/${sample_name}_RAW_SNV_ANNOTATED.vcf \
--log ${out_dir}/${sample_name}/LOG/9-2-1_${sample_name}_QC_snv_annotation.log
-
-##-------------
-##Step9-3-1: Filter SNPs
-##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T VariantFiltration \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/QC/${sample_name}_RAW_SNV_ANNOTATED.vcf \
+-R /data/${ref_genome} \
+--variant /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_SNV.vcf \
 --disable_auto_index_creation_and_locking_when_reading_rods \
 --filterExpression 'QD < 2.0' \
 --filterName 'QD' \
@@ -502,75 +414,80 @@ java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
 --filterExpression 'DP < 8.0' \
 --filterName 'DP' \
 --logging_level ERROR \
--o ${out_dir}/${sample_name}/QC/${sample_name}_FILTERED_SNV.vcf \
--log ${out_dir}/${sample_name}/LOG/9-3-1_${sample_name}_QC_filter_snv.log
+-o /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/9-1-2_${sample_name}_QC_filter_snv.log
 
 ##-------------
-##Step9-4-1: Clean SNPs
+##Step9-2-1: Extract INDELs
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
+docker run --rm -v /:/data alexcoppe/gatk \
 -T SelectVariants \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/QC/${sample_name}_FILTERED_SNV.vcf \
+-R /data/${ref_genome} \
+--variant /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_ANNOTATED.vcf \
 --disable_auto_index_creation_and_locking_when_reading_rods \
+-selectType INDEL \
+-selectType MNP \
+-selectType MIXED \
+-selectType SYMBOLIC \
 --excludeFiltered \
 -nt 1 \
--o  ${out_dir}/${sample_name}/QC/FILTERED/${sample_name}_CLEAN_SNV.vcf \
--log ${out_dir}/${sample_name}/LOG/9-4-1_${sample_name}_QC_clean_snv.log
+-o /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_INDEL.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/9-2-1_${sample_name}_QC_select_INDEL.log
 
 ##-------------
-##Step9-5: Combine SNVs + Indels
+##Step9-2-2: Filter INDELs
 ##-------------
-java -Xmx${java_mem} -jar ${gatk_dir}/GenomeAnalysisTK.jar \
--T CombineVariants \
--R ${ref_genome} \
---variant ${out_dir}/${sample_name}/QC/FILTERED/${sample_name}_CLEAN_SNV.vcf \
---variant ${out_dir}/${sample_name}/QC/${sample_name}_RAW_INDEL.vcf \
+docker run --rm -v /:/data alexcoppe/gatk \
+-T VariantFiltration \
+-R /data/${ref_genome} \
+--variant /data/${out_dir}/${sample_name}/VCF/${sample_name}_RAW_INDEL.vcf \
 --disable_auto_index_creation_and_locking_when_reading_rods \
---genotypemergeoption UNSORTED \
--o ${out_dir}/${sample_name}/QC/FILTERED/${sample_name}_CLEAN_SNV+INDEL.vcf \
--log ${out_dir}/${sample_name}/LOG/9-5_${sample_name}_QC_combine_variants.log
+--filterExpression 'QD < 2.0' \
+--filterName 'QD' \
+--filterExpression 'FS > 40.0' \
+--filterName 'FS' \
+--filterExpression 'ReadPosRankSum < -8.0' \
+--filterName 'ReadPosRankSum' \
+--filterExpression 'DP < 8.0' \
+--filterName 'DP' \
+--logging_level ERROR \
+-o /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.vcf \
+-log /data/${out_dir}/${sample_name}/LOG/9-2-2_${sample_name}_QC_filter_indel.log
 
 EOL
-
-
-
-
 
 ##-------------
 ##MASTER SCRIPT
 ##-------------
-cat <<EOL > ${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
+cat <<EOL > /${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
 #!/bin/bash
 set -e
 ##-------------
-##${sample_name}'s Vaiant Calling
+##${sample_name}'s Variant Calling
 ##-------------
-(bash ${out_dir}/${sample_name}/Scripts/1_${sample_name}_align.sh) 2>&1 | tee ${out_dir}/${sample_name}/LOG/1_${sample_name}_alignment.log
-(bash ${out_dir}/${sample_name}/Scripts/2_${sample_name}_sort.sh) 2>&1 | tee ${out_dir}/${sample_name}/LOG/2_${sample_name}_sort.log
-(bash ${out_dir}/${sample_name}/Scripts/3_${sample_name}_deduplicate.sh) 2>&1 | tee ${out_dir}/${sample_name}/LOG/3_${sample_name}_deduplication.log
-(bash ${out_dir}/${sample_name}/Scripts/4_${sample_name}_build_index.sh) 2>&1 | tee ${out_dir}/${sample_name}/LOG/4_${sample_name}_building_index.log
+(bash /${out_dir}/${sample_name}/Scripts/1_${sample_name}_align.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/1_${sample_name}_alignment.log
+(bash /${out_dir}/${sample_name}/Scripts/2_${sample_name}_sort.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/2_${sample_name}_sort.log
+(bash /${out_dir}/${sample_name}/Scripts/3_${sample_name}_deduplicate.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/3_${sample_name}_deduplication.log
+(bash /${out_dir}/${sample_name}/Scripts/4_${sample_name}_build_index.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/4_${sample_name}_building_index.log
 
-if [[ -e ${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam ]] ; then
-		rm ${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam
+if [[ -e /${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam ]] ; then
+		rm /${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam
 fi
 
-bash ${out_dir}/${sample_name}/Scripts/5_${sample_name}_realign_indels.sh
-bash ${out_dir}/${sample_name}/Scripts/6_${sample_name}_recalibrate_base.sh
+bash /${out_dir}/${sample_name}/Scripts/6_${sample_name}_recalibrate_base.sh
 
-if [[ -e ${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam ]]; then
-  rm -f ${out_dir}/${sample_name}/BAM/${sample_name}_{deduplicated,sorted,realigned}.{bam,bai}
+if [[ -e /${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam ]]; then
+  rm -f /${out_dir}/${sample_name}/BAM/${sample_name}_{deduplicated,sorted,realigned}.{bam,bai}
 fi
 
-bash ${out_dir}/${sample_name}/Scripts/7_${sample_name}_call_haplotype.sh
+bash /${out_dir}/${sample_name}/Scripts/7_${sample_name}_call_haplotype.sh
 
 if [[ ${no_geno} != 1 ]] ; then
-		bash ${out_dir}/${sample_name}/Scripts/8_${sample_name}_genotype.sh
-		bash ${out_dir}/${sample_name}/Scripts/9_${sample_name}_SNV_quality_control.sh
+		bash /${out_dir}/${sample_name}/Scripts/8_${sample_name}_genotype_gvcf.sh
+		bash /${out_dir}/${sample_name}/Scripts/9_${sample_name}_SNV_quality_control.sh
 fi
 
 EOL
-
 
 
 
@@ -579,5 +496,5 @@ EOL
 ##EXECUTION
 ##-------------
 if [[ ${no_exec} != 1 ]] ; then
-		bash ${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
+		bash /${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
 fi

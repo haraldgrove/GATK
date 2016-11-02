@@ -35,21 +35,22 @@ set -e
 ##-------------
 ##Step0-1: Directories
 ##-------------
-snpeff_dir=/home/harald/software/snpEff
+snpeff_dir=/home/biodocker/snpEff
+out_dir=tiger/harald/bgi2
 
 ##-------------
 ##Step0-2: References
 ##-------------
-DBSNP=/home/harald/Rawdata/hg38bundle/dbsnp_144.hg38.vcf.gz
+DBSNP=tiger/harald/resources/hg38bundle/dbsnp_144.hg38.vcf.gz
 DBNSFP=${snpeff_dir}/data/dbNSFP.txt.gz
 GWASCATALOG=${snpeff_dir}/data/gwas_catalog_v1.0.1-associations_e84_r2016-07-10.tsv
 PHASTCONS=${snpeff_dir}/data/phastCons100way
-CLINVAR=${snpeff_dir}/data/clinvar.vcf.gz 
+CLINVAR=${snpeff_dir}/data/clinvar.vcf 
 
 ##-------------
 ##Step0-3: Other Parametres
 ##-------------
-java_mem=6g
+java_mem=10G
 
 ##-------------
 ##Step0-4: Input Arguments
@@ -58,7 +59,7 @@ while test $# -gt 0 ; do
         case "$1" in
                 -h|--help)
                         echo ""
-						echo "Usage: bash $0 [options] input_file"
+			echo "Usage: bash $0 [options] input_file"
                         echo ""
                         echo "This script annotates a given VCF file with the following databases:"
                         echo "i>	dbSNP"
@@ -69,68 +70,73 @@ while test $# -gt 0 ; do
                         echo "vi>	SnpEff"
                         echo ""
                         echo "Options:"
-                        echo "-h, --help				display this help and exit"
-						echo "-v, --version				display version of this script and exit"
-						echo "-XS, --no-summary			suppress the command summary before execution"
-						echo "-XP, --no-prompt			suppress the user prompt before execution, only when the command summary is displayed"
-						# echo "-O, --out-dir	OUT_DIR			specify output directory, the same as input's by default"
-                        echo "-o, --out-file		OUT_FILE	specify output file, by default the input file's name with the suffix \"annotated\" appended"
-						echo "-r, --replace				instruct the output annotated file to replace the input file, treating OUT_FILE as the temporary file if both activated"
-						echo ""
+                        echo "-h, --help			display this help and exit"
+			echo "-v, --version			display version of this script and exit"
+			echo "-XS, --no-summary			suppress the command summary before execution"
+			echo "-XP, --no-prompt			suppress the user prompt before execution, only when the command summary is displayed"
+			# echo "-O, --out-dir	OUT_DIR			specify output directory, the same as input's by default"
+                        #echo "-o, --out-file	OUT_FILE	specify output file, by default the input file's name with the suffix \"annotated\" appended"
+			echo "-r, --replace			instruct the output annotated file to replace the input file, treating OUT_FILE as the temporary file if both activated"
+			echo ""
                         exit 0
                         ;;
-				-v|--version)
-						echo ""
-						echo "GATK_annotate.sh"
+		-v|--version)
+			echo ""
+			echo "GATK_annotate.sh"
                         echo ""
-						echo "Created MAR 2016"
-						echo "Updated JUL 2016"
-						echo "by"
-						echo "PURIN WANGKIRATIKANT [purin.wan@mahidol.ac.th]"
-						echo "Clinical Database Centre, Institute of Personalised Genomics and Gene Therapy (IPGG)"
-						echo "Faculty of Medicine Siriraj Hospital, Mahidol University, Bangkok, Thailand"
-						echo ""
-						exit 0
-						;;
-				-XS|--no-summary)
-						no_summary=1
-						shift
-						;;
-				-XP|--no-prompt)
-						no_prompt=1
-						shift
-						;;
+			echo "Created MAR 2016"
+			echo "Updated JUL 2016"
+			echo "by"
+			echo "PURIN WANGKIRATIKANT [purin.wan@mahidol.ac.th]"
+                        echo ""
+                        echo "This version uses a Docker image to store snpEff, SnpSift and most of the databases (except DBSNP)"
+                        echo "Updated NOV 2016"
+                        echo "by"
+                        echo "HARALD GROVE [harald.gro@mahidol.ac.th]"
+			echo "Clinical Database Centre, Institute of Personalised Genomics and Gene Therapy (IPGG)"
+			echo "Faculty of Medicine Siriraj Hospital, Mahidol University, Bangkok, Thailand"
+			echo ""
+			exit 0
+			;;
+		-XS|--no-summary)
+			no_summary=1
+			shift
+			;;
+		-XP|--no-prompt)
+			no_prompt=1
+			shift
+			;;
                 -o|--out-file)
                         shift
-						out_file=$1
-						out_dir=$( echo $1 | sed 's/\/[^\/]*$//')/.
+			out_file=$1
+			out_dir=$( echo $1 | sed 's/\/[^\/]*$//')/.
                         shift
                         ;;
-				-r|--replace)
-						replacement=YES
-						shift
-						;;
+		-r|--replace)
+			replacement=YES
+			shift
+			;;
                 # -O|--out-dir)
                         # shift
-						# out_dir=$( echo $1 | sed 's/\/$//' )
+			# out_dir=$( echo $1 | sed 's/\/$//' )
                         # shift
                         # ;;
-				*)
-						in_file=$1
-						shift
-						;;
-		esac
+		*)
+			sample_name=$1
+			shift
+			;;
+	esac
 done
 
 ##-------------
 ##Step0-5: Default Value Setting
 ##-------------
-if [[ ! -v out_dir ]] ; then
-		out_dir=$( pwd )
-fi
-if [[ ! -v out_file ]] ; then
-		out_file=$( echo ${in_file} | sed 's/.vcf$/_annotated.vcf/' )
-fi
+#if [[ ! -v out_dir ]] ; then
+#		out_dir=$( pwd )
+#fi
+#if [[ ! -v out_file ]] ; then
+#		out_file=$( echo ${in_file} | sed 's/.vcf$/_annotated.vcf/' )
+#fi
 if [[ ! -v replacement ]] ; then
 		replacement=NO
 fi
@@ -138,6 +144,7 @@ fi
 ##-------------
 ##Step0-6: Input Verification
 ##-------------
+in_file=/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.vcf
 if [[ ! -e ${in_file} ]] ; then
 		echo
 		echo 'Invalid INPUT FILE: '${in_file}
@@ -151,43 +158,43 @@ fi
 ##Step0-7: Summarisation & User's Confirmation Prompt
 ##-------------
 if [[ ${no_summary} != 1 ]] ; then
-		echo
-		echo '---------------------------------------'
-		echo 'VARIANT ANNOTATION'
-		echo 'INPUT FILE =			'${in_file}
-		echo 'OUTPUT FILE =			'${out_file}
-		echo 'REPLACEMENT =			'${replacement}
-		echo '---------------------------------------'
-		echo
+	echo
+	echo '---------------------------------------'
+	echo 'VARIANT ANNOTATION'
+	echo 'INPUT FILE =			'${in_file}
+	echo 'OUTPUT FILE =			'${out_file}
+	echo 'REPLACEMENT =			'${replacement}
+	echo '---------------------------------------'
+	echo
 
-		if [[ ${no_prompt} != 1 ]] ; then
-				while true ; do
-						read -p "Are all the input arguments correct? (Y/N): " confirm
-						case ${confirm} in
-								Y|y)
-										echo "Confirmed. Initiating..."
-										echo
-										break
-										;;
-								N|n)
-										echo "Terminated."
-										echo
-										exit 1
-										;;
-								* )
-										echo "Please enter Y or N."
-										echo
-										;;
-						esac
-				done
-		fi
+	if [[ ${no_prompt} != 1 ]] ; then
+		while true ; do
+			read -p "Are all the input arguments correct? (Y/N): " confirm
+			case ${confirm} in
+				Y|y)
+					echo "Confirmed. Initiating..."
+					echo
+					break
+					;;
+				N|n)
+					echo "Terminated."
+					echo
+					exit 1
+					;;
+				* )
+					echo "Please enter Y or N."
+					echo
+					;;
+			esac
+		done
+	fi
 fi
 
 ##-------------
 ##Step0-8: Output Folder Creation
 ##-------------
-mkdir -p ${out_dir}
-cp ${in_file} ${out_file}
+#mkdir -p /${out_dir}
+#cp ${in_file} ${out_file}
 
 
 
@@ -195,8 +202,18 @@ cp ${in_file} ${out_file}
 ##Step1: dbSNP
 ##-------------
 echo '1/6 dbSNP Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/SnpSift.jar annotate ${DBSNP} ${out_file} > ${out_file}.temp.vcf
-mv ${out_file}.temp.vcf ${out_file}
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+annotate \
+/data/${DBSNP} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp1.vcf
+
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+annotate \
+/data/${DBSNP} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp1.vcf
+
 echo '1/6 dbSNP Annotation Completed'
 
 
@@ -205,8 +222,18 @@ echo '1/6 dbSNP Annotation Completed'
 ##Step2: dbNSFP
 ##-------------
 echo '2/6 dbNSFP Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/SnpSift.jar dbnsfp -v -db ${DBNSFP} ${out_file} > ${out_file}.temp.vcf
-mv ${out_file}.temp.vcf ${out_file}
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+dbnsfp \
+-db ${DBNSFP} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp1.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp2.vcf
+
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+dbnsfp \
+-db ${DBNSFP} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp1.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp2.vcf
+
 echo '2/6 dbNSFP Annotation Completed'
 
 
@@ -215,8 +242,18 @@ echo '2/6 dbNSFP Annotation Completed'
 ##Step3: gwasCat
 ##-------------
 echo '3/6 gwasCat Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/SnpSift.jar gwasCat -db ${GWASCATALOG} ${out_file} > ${out_file}.temp.vcf
-mv ${out_file}.temp.vcf ${out_file}
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+gwasCat \
+-db ${GWASCATALOG} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp2.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp3.vcf
+
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+gwasCat \
+-db ${GWASCATALOG} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp2.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp3.vcf
+
 echo '3/6 gwasCat Annotation Completed'
 
 
@@ -225,8 +262,18 @@ echo '3/6 gwasCat Annotation Completed'
 ##Step4: PhastCons
 ##-------------
 echo '4/6 PhastCons Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/SnpSift.jar phastCons ${PHASTCONS} ${out_file} > ${out_file}.temp.vcf
-mv ${out_file}.temp.vcf ${out_file}
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+phastCons \
+${PHASTCONS} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp3.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp4.vcf
+
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+phastCons \
+${PHASTCONS} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp3.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp4.vcf
+
 echo '4/6 PhastCons Annotation Completed'
 
 
@@ -235,25 +282,60 @@ echo '4/6 PhastCons Annotation Completed'
 ##Step5: ClinVar
 ##-------------
 echo '5/6 ClinVar Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/SnpSift.jar annotate ${CLINVAR} ${out_file} > ${out_file}.temp.vcf
-mv ${out_file}.temp.vcf ${out_file}
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+annotate \
+${CLINVAR} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp4.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp5.vcf
+
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+annotate \
+${CLINVAR} \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp4.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp5.vcf
+
 echo '5/6 ClinVar Annotation Completed'
 
-
+##-------------
+##Step6: ESP6500
+##-------------
+#echo '6/7 ESP6500 Annotation Started'
+#docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+#annotate \
+#/home/biodocker/snpEff/data/ESP6500/ESP6500SI-V2-SSA137.GRCh38-liftover.snps_indels.vcf \
+#/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp5.vcf \
+#> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp6.vcf
+#
+#docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+#annotate \
+#/home/biodocker/snpEff/data/ESP6500/ESP6500SI-V2-SSA137.GRCh38-liftover.snps_indels.vcf \
+#/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp5.vcf \
+#> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp6.vcf
+#echo '6/7 ESP6500 Annotation Completed'
 
 ##-------------
 ##Step6: SnpEff
 ##-------------
 echo '6/6 SnpEff Annotation Started'
-java -Xmx${java_mem} -jar ${snpeff_dir}/snpEff.jar GRCh38.82 ${out_file} > ${out_file}.temp.vcf
-mv ${out_file}.temp.vcf ${out_file}
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx10G -jar /home/biodocker/snpEff/snpEff.jar \
+GRCh38.82 \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp5.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp6.vcf
+
+docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx10G -jar /home/biodocker/snpEff/snpEff.jar \
+GRCh38.82 \
+/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp5.vcf \
+> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp6.vcf
+
 echo '6/6 SnpEff Annotation Completed'
 
 
 
 ##-------------
-##Step7: Replacement
+##Step8: Replacement
 ##-------------
+#mv /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp6.vcf /${out_dir}/${sample_name}/VCF/${sample_name}_SNV.vcf
+#mv /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp6.vcf /${out_dir}/${sample_name}/VCF/${sample_name}_INDEL.vcf
 if [[ ${replacement} == 'YES' ]] ; then
 		mv ${out_file} ${in_file}
 fi
