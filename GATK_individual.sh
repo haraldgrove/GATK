@@ -55,124 +55,125 @@ gatk_num_cpu_threads=8
 
 no_geno=0
 while test $# -gt 0 ; do
-        case "$1" in
-                -h|--help)
-						echo ""
-                        echo "Usage: bash $0 [options] sample_name"
-                        echo ""
-                        echo "This script performs the entire variant-calling process upon one sample, following the Genome Analysis Toolkit (GATK)'s pipeline."
-                        echo ""
-                        echo "Options:"
-                        echo "-h, --help				display this help and exit"
-						echo "-v, --version				display version of this script and exit"
-						echo "-XS, --no-summary			suppress the command summary before execution"
-						echo "-XP, --no-prompt			suppress the user prompt before execution, only when the command summary is displayed"
-						echo "-XX, --no-exec				suppress automatic execution, generating only script files"
-                        echo "-e, --exome				call only exonic variants, drastically accelerating the Call Haplotype and the Genotype processes"
-						echo ""
-                        exit 0
-                        ;;
-				-v|--version)
-						echo ""
-						echo "GATK_individual.sh"
-                        echo ""
-						echo "Created MAR 2016"
-						echo "Updated JUL 2016"
-						echo "by"
-						echo "PURIN WANGKIRATIKANT [purin.wan@mahidol.ac.th]"
-						echo "Clinical Database Centre, Institute of Personalised Genomics and Gene Therapy (IPGG)"
-						echo "Faculty of Medicine Siriraj Hospital, Mahidol University, Bangkok, Thailand"
-						echo ""
-						exit 0
-						;;
-				-XS|--no-summary)
-						no_summary=1
-						shift
-						;;
-				-XP|--no-prompt)
-						no_prompt=1
-						shift
-						;;
-				-XX|--no-exec)
-						no_exec=1
-						shift
-						;;
-				-XG|--no-genotyping)
-						no_geno=1
-						shift
-						;;
-                -e|--exome)
-						seq_type='EXOME'
-						bed_argument='-L '/data/${exon_bed}
-                        shift
-                        ;;
-				*)
-						sample_name=$1
-						shift
-						;;
-		esac
+    case "$1" in
+        -h|--help)
+            echo ""
+            echo "Usage: bash $0 [options] sample_name"
+            echo ""
+            echo "This script performs the entire variant-calling process upon one sample,"
+            echo "following the Genome Analysis Toolkit (GATK)'s pipeline."
+            echo ""
+            echo "Options:"
+            echo "-h, --help          display this help and exit"
+            echo "-v, --version       display version of this script and exit"
+            echo "-XS, --no-summary   suppress the command summary before execution"
+            echo "-XP, --no-prompt    suppress the user prompt before execution, only when the command summary is displayed"
+            echo "-XX, --no-exec      suppress automatic execution, generating only script files"
+            echo "-e, --exome         limit variant detection to certain regions, requires bed-file"
+            echo ""
+            exit 0
+            ;;
+        -v|--version)
+            echo ""
+            echo "GATK_individual.sh"
+            echo ""
+            echo "Created MAR 2016"
+            echo "Updated JUL 2016"
+            echo "by"
+            echo "PURIN WANGKIRATIKANT [purin.wan@mahidol.ac.th]"
+            echo "Clinical Database Centre, Institute of Personalised Genomics and Gene Therapy (IPGG)"
+            echo "Faculty of Medicine Siriraj Hospital, Mahidol University, Bangkok, Thailand"
+            echo ""
+            exit 0
+            ;;
+        -XS|--no-summary)
+            no_summary=1
+            shift
+            ;;
+        -XP|--no-prompt)
+            no_prompt=1
+            shift
+            ;;
+        -XX|--no-exec)
+            no_exec=1
+            shift
+            ;;
+        -XG|--no-genotyping)
+            no_geno=1
+            shift
+            ;;
+        -e|--exome)
+            seq_type='EXOME'
+            bed_argument='-L '/data/${exon_bed}
+            shift
+            ;;
+        *)
+            sample_name=$1
+            shift
+            ;;
+    esac
 done
 
 ##-------------
 ##Step0-5: Default Value Setting
 ##-------------
 if [[ ! -v seq_type ]] ; then
-		seq_type='GENOME'
+    seq_type='GENOME'
 fi
 
 ##-------------
 ##Step0-6: Input Verification
 ##-------------
 if [[ ! -e /${fastq_dir}/${sample_name}_1.fastq.gz ]] ; then
-		echo
-		echo 'Invalid SAMPLE NAME: '${sample_name}
-		echo /${fastq_dir}/${sample_name}_1.fastq.gz not found.
-		echo 'Terminated.'
-		echo
-		exit 1
+    echo
+    echo 'Invalid SAMPLE NAME: '${sample_name}
+    echo /${fastq_dir}/${sample_name}_1.fastq.gz not found.
+    echo 'Terminated.'
+    echo
+    exit 1
 fi
 if [[ ! -e /${fastq_dir}/${sample_name}_2.fastq.gz ]] ; then
-		echo
-		echo 'Invalid SAMPLE NAME: '${sample_name}
-		echo /${fastq_dir}/${sample_name}_2.fastq.gz not found.
-		echo 'Terminated.'
-		echo
-		exit 1
+    echo
+    echo 'Invalid SAMPLE NAME: '${sample_name}
+    echo /${fastq_dir}/${sample_name}_2.fastq.gz not found.
+    echo 'Terminated.'
+    echo
+    exit 1
 fi
 
 ##-------------
 ##Step0-7: Summarisation & User's Confirmation Prompt
 ##-------------
 if [[ ${no_summary} != 1 ]] ; then
-		echo
-		echo '---------------------------------------'
-		echo 'INDIVIDUAL VARIANT CALLING PROCESS'
-		echo 'SAMPLE NAME =			'${sample_name}
-		echo 'SEQUENCED DATA =		'${seq_type}
-		echo '---------------------------------------'
-		echo
+    echo
+    echo '---------------------------------------'
+    echo 'INDIVIDUAL VARIANT CALLING PROCESS'
+    echo 'SAMPLE NAME =			'${sample_name}
+    echo 'SEQUENCED DATA =		'${seq_type}
+    echo '---------------------------------------'
+    echo
 
-		if [[ ${no_prompt} != 1 ]] ; then
-				while true ; do
-						read -p "Are all the input arguments correct? (Y/N): " confirm
-						case ${confirm} in
-								Y|y)
-										echo "Confirmed. Initiating..."
-										echo
-										break
-										;;
-								N|n)
-										echo "Terminated."
-										echo
-										exit 1
-										;;
-								* )
-										echo "Please enter Y or N."
-										echo
-										;;
-						esac
-				done
-		fi
+    if [[ ${no_prompt} != 1 ]] ; then
+        while true ; do
+            read -p "Are all the input arguments correct? (Y/N): " confirm
+            case ${confirm} in
+                Y|y)
+                    echo "Confirmed. Initiating..."
+                    echo
+                    break
+                    ;;
+                N|n)
+                    echo "Terminated."
+                    echo
+                    exit 1
+                    ;;
+                * )
+                    echo "Please enter Y or N."
+                    echo
+                    ;;
+            esac
+        done
+    fi
 fi
 
 ##-------------
@@ -283,8 +284,8 @@ ${bed_argument} \
 -I /data/${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam \
 -nct ${gatk_num_cpu_threads} \
 -o /data/${out_dir}/${sample_name}/BQSR/${sample_name}_perform_bqsr.table \
--log /data/${out_dir}/${sample_name}/LOG/6-1_${sample_name}_perform_bqsr.log \
---fix_misencoded_quality_scores
+-log /data/${out_dir}/${sample_name}/LOG/6-1_${sample_name}_perform_bqsr.log
+#--fix_misencoded_quality_scores
 
 ##-------------
 ##Step6-4: Print Reads
@@ -471,20 +472,20 @@ set -e
 (bash /${out_dir}/${sample_name}/Scripts/4_${sample_name}_build_index.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/4_${sample_name}_building_index.log
 
 if [[ -e /${out_dir}/${sample_name}/BAM/${sample_name}_deduplicated.bam ]] ; then
-		rm /${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam
+    rm /${out_dir}/${sample_name}/SAM/${sample_name}_aligned.sam
 fi
 
 bash /${out_dir}/${sample_name}/Scripts/6_${sample_name}_recalibrate_base.sh
 
 if [[ -e /${out_dir}/${sample_name}/BAM/${sample_name}_GATK.bam ]]; then
-  rm -f /${out_dir}/${sample_name}/BAM/${sample_name}_{deduplicated,sorted,realigned}.{bam,bai}
+    rm -f /${out_dir}/${sample_name}/BAM/${sample_name}_{deduplicated,sorted,realigned}.{bam,bai}
 fi
 
 bash /${out_dir}/${sample_name}/Scripts/7_${sample_name}_call_haplotype.sh
 
 if [[ ${no_geno} != 1 ]] ; then
-		bash /${out_dir}/${sample_name}/Scripts/8_${sample_name}_genotype_gvcf.sh
-		bash /${out_dir}/${sample_name}/Scripts/9_${sample_name}_SNV_quality_control.sh
+    bash /${out_dir}/${sample_name}/Scripts/8_${sample_name}_genotype_gvcf.sh
+    bash /${out_dir}/${sample_name}/Scripts/9_${sample_name}_SNV_quality_control.sh
 fi
 
 EOL
@@ -496,5 +497,5 @@ EOL
 ##EXECUTION
 ##-------------
 if [[ ${no_exec} != 1 ]] ; then
-		bash /${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
+    bash /${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
 fi
