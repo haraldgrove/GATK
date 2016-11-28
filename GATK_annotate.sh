@@ -1,11 +1,16 @@
 #!/bin/bash
 ##-------------
+##Original development:
 ##Purin Wangkiratikant, MAR 2016
 ##Clinical Database Centre, Institute of Personalised Genomics and Gene Therapy (IPGG)
 ##Faculty of Medicine Siriraj Hospital, Mahidol University, Bangkok, Thailand
 ##-----------
+##Addition of docker images and use of hg38 reference
 ##Harald Grove, JUN 2016
-##Upgraded reference to hg38
+##NOTICE:
+##  The use of docker images creates some points to be aware of:
+##      By default the root folder ('/') is being mapped to /data in the container
+##      This means that root should be excluded from the given paths (e.g. out_dir)
 ##-------------
 ##This script annotates a given VCF file with the following databases:
 ##i>	dbSNP
@@ -36,13 +41,13 @@ set -e
 ##Step0-1: Directories
 ##-------------
 snpeff_dir=/home/biodocker/snpEff
-out_dir=tiger/harald/test
+out_dir=tiger/harald/SCD
 
 ##-------------
 ##Step0-2: References
 ##-------------
 DBSNP=tiger/harald/resources/hg38bundle/dbsnp_144.hg38.vcf.gz
-DBNSFP=${snpeff_dir}/data/dbNSFP.txt.gz
+DBNSFP=${snpeff_dir}/data/dbNSFP3.2a.txt.gz
 GWASCATALOG=${snpeff_dir}/data/gwas_catalog_v1.0.1-associations_e84_r2016-07-10.tsv
 PHASTCONS=${snpeff_dir}/data/phastCons100way
 CLINVAR=${snpeff_dir}/data/clinvar.vcf 
@@ -210,13 +215,13 @@ cat << EOL > /${out_dir}/${sample_name}/Scripts/${sample_name}_annotate.sh
 ##Step1: dbSNP
 ##-------------
 echo '1/6 dbSNP Annotation Started'
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 annotate \
 /data/${DBSNP} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp1.vcf
 
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 annotate \
 /data/${DBSNP} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.vcf \
@@ -230,13 +235,13 @@ echo '1/6 dbSNP Annotation Completed'
 ##Step2: dbNSFP
 ##-------------
 echo '2/6 dbNSFP Annotation Started'
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 dbnsfp \
 -db ${DBNSFP} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp1.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp2.vcf
 
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 dbnsfp \
 -db ${DBNSFP} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp1.vcf \
@@ -250,13 +255,13 @@ echo '2/6 dbNSFP Annotation Completed'
 ##Step3: gwasCat
 ##-------------
 echo '3/6 gwasCat Annotation Started'
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 gwasCat \
 -db ${GWASCATALOG} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp2.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp3.vcf
 
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 gwasCat \
 -db ${GWASCATALOG} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp2.vcf \
@@ -270,13 +275,13 @@ echo '3/6 gwasCat Annotation Completed'
 ##Step4: PhastCons
 ##-------------
 echo '4/6 PhastCons Annotation Started'
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 phastCons \
 ${PHASTCONS} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp3.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp4.vcf
 
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 phastCons \
 ${PHASTCONS} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp3.vcf \
@@ -290,13 +295,13 @@ echo '4/6 PhastCons Annotation Completed'
 ##Step5: ClinVar
 ##-------------
 echo '5/6 ClinVar Annotation Started'
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 annotate \
 ${CLINVAR} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp4.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp5.vcf
 
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 annotate \
 ${CLINVAR} \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp4.vcf \
@@ -308,13 +313,13 @@ echo '5/6 ClinVar Annotation Completed'
 ##Step6: ESP6500
 ##-------------
 #echo '6/7 ESP6500 Annotation Started'
-#docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+#docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 #annotate \
 #/home/biodocker/snpEff/data/ESP6500/ESP6500SI-V2-SSA137.GRCh38-liftover.snps_indels.vcf \
 #/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp5.vcf \
 #> /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp6.vcf
 #
-#docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
+#docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx${java_mem} -jar /home/biodocker/snpEff/SnpSift.jar \
 #annotate \
 #/home/biodocker/snpEff/data/ESP6500/ESP6500SI-V2-SSA137.GRCh38-liftover.snps_indels.vcf \
 #/data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp5.vcf \
@@ -325,12 +330,12 @@ echo '5/6 ClinVar Annotation Completed'
 ##Step6: SnpEff
 ##-------------
 echo '6/6 SnpEff Annotation Started'
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx10G -jar /home/biodocker/snpEff/snpEff.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx10G -jar /home/biodocker/snpEff/snpEff.jar \
 GRCh38.82 \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp5.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_SNV.temp6.vcf
 
-docker run --rm -v /:/data haraldgrove/snpeff:v1 java -Xmx10G -jar /home/biodocker/snpEff/snpEff.jar \
+docker run --rm -v /:/data haraldgrove/snpeff:v2 java -Xmx10G -jar /home/biodocker/snpEff/snpEff.jar \
 GRCh38.82 \
 /data/${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp5.vcf \
 > /${out_dir}/${sample_name}/VCF/${sample_name}_FILTERED_INDEL.temp6.vcf

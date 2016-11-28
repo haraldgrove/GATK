@@ -19,7 +19,7 @@
 
 ## Make sure the script stop at first error
 set -e
-
+version=0.1
 
 ##-------------
 ##Step0: Initialisation
@@ -29,9 +29,9 @@ set -e
 ##Step0-1: Directories
 ##-------------
 map_dir=/
-fastq_dir=tiger/harald/bgi2
+fastq_dir=tiger/harald/SCD/fastq
 ref_dir=tiger/harald/resources/hg38bundle
-out_dir=tiger/harald/bgi2
+out_dir=tiger/harald/SCD
 
 ##-------------
 ##Step0-2: References
@@ -465,6 +465,7 @@ cat <<EOL > /${out_dir}/${sample_name}/Scripts/${sample_name}_GATK.sh
 set -e
 ##-------------
 ##${sample_name}'s Variant Calling
+## Script version: ${version}
 ##-------------
 (bash /${out_dir}/${sample_name}/Scripts/1_${sample_name}_align.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/1_${sample_name}_alignment.log
 (bash /${out_dir}/${sample_name}/Scripts/2_${sample_name}_sort.sh) 2>&1 | tee /${out_dir}/${sample_name}/LOG/2_${sample_name}_sort.log
